@@ -15,10 +15,6 @@ function getRandomVerse() {
     const verses = chapters[chapterIndex].verses;
     const verseIndex = getRandomInt(verses.length)
     const verse = [bookIndex + 1, chapterIndex + 1, verseIndex + 1];
-    gtag('event', 'verse', {
-        'event_category': 'pentateuch',
-        'event_label': verse.join(','),
-    });
     return verse;
 }
 
@@ -124,6 +120,10 @@ class App extends React.Component {
     pickChapter(chapterChoice) {
         this.setState((state) => {
             const points = getPoints(state.bookChoice, chapterChoice, state.verse)
+            gtag('event', 'selection', {
+                'event_category': 'pentateuch',
+                'event_label': [verse[0], verse[1], verse[2], state.bookChoice, chapterChoice, points].join(','),
+            });
             return {
                 chapterChoice,
                 questionNum: state.questionNum + 1,
@@ -308,7 +308,7 @@ function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
     } else if (bookChoice === null) {
         return (
             <div className="footer">
-                <p className="footer__help">Which book is the <span style={{color: '#333'}}>black</span> verse in?</p>
+                <p className="footer__help">Which book is the randomly selected <span style={{color: '#333'}}>black</span> verse in?</p>
                 <Btn color={BOOK_COLORS[0]} onClick={() => onClick(1)}>Genesis</Btn>
                 <Btn color={BOOK_COLORS[1]} onClick={() => onClick(2)}>Exodus</Btn>
                 <Btn color={BOOK_COLORS[2]} onClick={() => onClick(3)}>Leviticus</Btn>
