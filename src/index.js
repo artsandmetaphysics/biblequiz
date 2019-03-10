@@ -7,11 +7,13 @@ const BOOKS = ['Genesis', 'Exodous', 'Leviticus', 'Numbers', 'Deuteronomy'];
 const CHAPTERS_PER_BOOK = [50, 40, 27, 36, 34];
 
 function getRandomVerse() {
-    return randomChoice([
-        [1, 1, 1],
-        [1, 1, 2],
-        [1, 1, 3],
-    ]);
+    // TODO: review to make sure we don't have off-by-one errors
+    const bookIndex = getRandomInt(PENTATEUCH.length);
+    const chapters = PENTATEUCH[bookIndex].chapters;
+    const chapterIndex = getRandomInt(chapters.length);
+    const verses = chapters[chapterIndex].verses;
+    const verseIndex = getRandomInt(verses.length)
+    return [bookIndex + 1, chapterIndex + 1, verseIndex + 1]
 }
 
 function verseToLabel(verseArray) {
@@ -23,8 +25,8 @@ function bookNumToLabel(bookNum) {
     return BOOKS[bookNum + 1];
 }
 
-function randomChoice(items) {
-    return items[Math.floor(Math.random()*items.length)];
+function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
 }
 
 function getPoints(bookChoice, chapterChoice, answer) {
@@ -39,16 +41,11 @@ function getPoints(bookChoice, chapterChoice, answer) {
     return points;
 }
 
-function getVerseText(verse) {
-    if (flatArraysEqual(verse, [1, 1, 1])) {
-        return 'Which also were accounted giants, as the Anakims; but the Moabites call them Emims.';
-    } else if (flatArraysEqual(verse, [1, 1, 2])) {
-        return 'This is another verse';
-    } else if (flatArraysEqual(verse, [1, 1, 3])) {
-        return 'This is a third verse';
-    } else {
-        throw new Error();
-    }
+function getVerseText(verseArray) {
+    const [bookNum, chapterNum, verseNum] = verseArray;
+    const book = PENTATEUCH[bookNum - 1];
+    const chapter = book.chapters[chapterNum - 1]
+    return chapter.verses[verseNum - 1][String(verseNum)];
 }
 
 function flatArraysEqual(a, b) {
@@ -132,11 +129,12 @@ class App extends React.Component {
 }
 
 function Header ({score, questionNum, questionsPerQuiz}) {
+    // TODO: get glow animation to retrigger
     return (
         <div className="header">
             <h1>Pentateuch Quiz</h1>
-            <h1>{score}</h1>
-            <h1>{questionNum}/{questionsPerQuiz}</h1>
+            <h1 className="glow">{score}</h1>
+            <h1 className="glow">{questionNum}/{questionsPerQuiz}</h1>
         </div>
     );
 }
@@ -162,7 +160,7 @@ function Footer ({bookChoice, chapterChoice, onClick}) {
             </div>
         );
     } else if (chapterChoice === null) {
-        const numChapters = CHAPTERS_PER_BOOK[bookChoice];
+        const numChapters = CHAPTERS_PER_BOOK[bookChoice - 1];
         const chapters = Array.apply(null, {length: numChapters}).map(Number.call, Number);
         return (
             <div className="footer">{chapters.map(i => <Btn key={i} onClick={() => onClick(i + 1)}>{i + 1}</Btn>)}
