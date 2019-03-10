@@ -301,7 +301,7 @@ function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
     if (showHistory) {
         return (
             <div className="footer">
-                <p className="footer__help">Please share with friends!<br />More quizzes will come if interest <a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
+                <p className="footer__help">Please share with friends!<br />More quizzes will come if there is interest.  Verses choosen randomly. <a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
                 <Btn color={'#5D4DC3'} onClick={onClick}>Start New Quiz</Btn>
             </div>
         );
