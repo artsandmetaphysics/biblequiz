@@ -127,3 +127,21 @@ p {
     align-items: center;
     cursor: pointer;
 }
+
+table {
+    border-collapse: collapse;
+}
+
+tr {
+    border-bottom: 1px solid #ccc;
+}
+
+td {
+    text-align: left;
+    padding: 0.25rem 1rem;
+}
+
+th {
+    text-align: center;
+    padding: 0.25rem 1rem;
+}
