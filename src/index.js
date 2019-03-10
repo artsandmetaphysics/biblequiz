@@ -1,6 +1,6 @@
 import "./index.scss";
 
-const QUESTIONS_PER_QUIZ = 10;
+const QUESTIONS_PER_QUIZ = 1;
 
 const BOOKS = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
 
@@ -213,7 +213,14 @@ function Body ({showAnswer, verse, bookChoice, chapterChoice}) {
 }
 
 function ScoreBody ({history}) {
-    const topTen = [...history].sort(h => -h.score).filter(h => h.score > 0).slice(0, 10);
+    const byScore = (a, b) => b.score - a.score;
+    const previousScores = history.slice();
+    const current = previousScores.pop();  // current score is on end
+    const isCurrent = (a) => a.dateTimeString === current.dateTimeString;
+    previousScores.sort(byScore);
+    const topTen = previousScores.slice(0, 9);
+    topTen.push(current);
+    topTen.sort(byScore);
     return (
         <div className="body">
             <table>
@@ -227,9 +234,9 @@ function ScoreBody ({history}) {
                 <tbody>
                     {topTen.map((item, i) => {
                         return (
-                            <tr key={i}>
+                            <tr key={i} style={isCurrent(item) ? {color: '#23BD98'}: {}}>
                                 <td>{i + 1}</td>
-                                <td>{item.score}</td>
+                                <td style={{textAlign: 'right'}}>{item.score}</td>
                                 <td>{item.dateTimeString}</td>
                             </tr>
                         );
