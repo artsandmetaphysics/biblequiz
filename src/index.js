@@ -345,6 +345,11 @@ function Btn ({children, onClick, color}) {
 }
 
 function recordHistoricalScore(score) {
+    gtag('event', 'finish', {
+        'event_category': 'pentateuch',
+        'event_label': 'score',
+        'value': score,
+    });
     const dateTimeString = new Date().toLocaleString();
     const scores = loadHistory();
     const dataPoint = {dateTimeString, score};
