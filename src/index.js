@@ -1,14 +1,13 @@
 import "./index.scss";
 
-const QUESTIONS_PER_QUIZ = 1;
+const QUESTIONS_PER_QUIZ = 10;
 
 const BOOKS = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
 
 const CHAPTERS_PER_BOOK = [50, 40, 27, 36, 34];
 
 function getRandomVerse() {
-    // TODO: review to make sure we don't have off-by-one errors
-    const bookIndex = getRandomInt(PENTATEUCH.length);
+    const bookIndex = getRandomIntWeighted(CHAPTERS_PER_BOOK);
     const chapters = PENTATEUCH[bookIndex].chapters;
     const chapterIndex = getRandomInt(chapters.length);
     const verses = chapters[chapterIndex].verses;
@@ -33,6 +32,19 @@ function bookNumToLabel(bookNum) {
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
+}
+
+function getRandomIntWeighted(lengths) {
+    // used to weight books of bible by chapter length
+    const sum = lengths.reduce((partial_sum, a) => partial_sum + a);
+    const i = getRandomInt(sum);
+    let index = 0;
+    let runningSum = lengths[index];
+    while (i >= runningSum) {
+        index += 1;
+        runningSum += lengths[index];
+    }
+    return index;
 }
 
 function getPoints(bookChoice, chapterChoice, answerVerseArray) {
@@ -244,7 +256,6 @@ function ScoreBody ({history}) {
                     })}
                 </tbody>
             </table>
-            <p><a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
         </div>
     );
 }
@@ -283,13 +294,14 @@ function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
     if (showHistory) {
         return (
             <div className="footer">
+                <p className="footer__help">Please share with friends!<br />More quizzes will come if interest <a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
                 <Btn color={'#5D4DC3'} onClick={onClick}>Start New Quiz</Btn>
             </div>
         );
     } else if (bookChoice === null) {
         return (
             <div className="footer">
-                <p className="footer__help">Which book is this verse from?</p>
+                <p className="footer__help">Which book is the <span style={{color: '#333'}}>black</span> verse in?</p>
                 <Btn color={BOOK_COLORS[0]} onClick={() => onClick(1)}>Genesis</Btn>
                 <Btn color={BOOK_COLORS[1]} onClick={() => onClick(2)}>Exodus</Btn>
                 <Btn color={BOOK_COLORS[2]} onClick={() => onClick(3)}>Leviticus</Btn>
