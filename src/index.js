@@ -14,7 +14,12 @@ function getRandomVerse() {
     const chapterIndex = getRandomInt(chapters.length);
     const verses = chapters[chapterIndex].verses;
     const verseIndex = getRandomInt(verses.length)
-    return [bookIndex + 1, chapterIndex + 1, verseIndex + 1]
+    const verse = [bookIndex + 1, chapterIndex + 1, verseIndex + 1];
+    gtag('event', 'verse', {
+        'event_category': 'pentateuch',
+        'event_label': verse.join(','),
+    });
+    return verse;
 }
 
 function verseToLabel(verseArray) {
