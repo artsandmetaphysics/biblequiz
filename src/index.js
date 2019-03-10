@@ -6,7 +6,7 @@ const BOOKS = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
 
 const CHAPTERS_PER_BOOK = [50, 40, 27, 36, 34];
 
-let ga = window.ga || function() {};
+let gtag = window.gtag || function() {};
 
 function getRandomVerse() {
     const bookIndex = getRandomIntWeighted(CHAPTERS_PER_BOOK);
@@ -332,7 +332,10 @@ function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
 }
 
 function Btn ({children, onClick, color}) {
-    ga('send',  'event', 'pentateuch', 'click', String(children));
+    gtag('event', 'click', {
+        'event_category': 'pentateuch',
+        'event_label': String(children)
+    });
     return <div style={{backgroundColor: color}} className="button" onClick={onClick}>{children}</div>
 }
 
