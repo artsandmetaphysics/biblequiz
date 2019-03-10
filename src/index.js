@@ -223,6 +223,7 @@ function ScoreBody ({history}) {
     topTen.sort(byScore);
     return (
         <div className="body">
+            <p>Thank you for playing!</p>
             <table>
                 <thead>
                     <tr>
@@ -243,6 +244,7 @@ function ScoreBody ({history}) {
                     })}
                 </tbody>
             </table>
+            <p><a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
         </div>
     );
 }
