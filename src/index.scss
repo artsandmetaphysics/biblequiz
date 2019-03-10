@@ -75,4 +75,19 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    cursor: pointer;
+}
+
+.glow {
+    animation-name: glow;
+    animation-duration: 1s;
+}
+
+@keyframes glow {
+  from {
+      text-shadow: 0px 0px 10px rgba(255, 255, 255, 1.0);
+  }
+  to {
+      text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.0);
+  }
 }
