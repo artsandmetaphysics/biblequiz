@@ -122,7 +122,12 @@ class App extends React.Component {
             const points = getPoints(state.bookChoice, chapterChoice, state.verse)
             gtag('event', 'selection', {
                 'event_category': 'pentateuch',
-                'event_label': [verse[0], verse[1], verse[2], state.bookChoice, chapterChoice, points].join(','),
+                'event_label': [
+                    state.verse[0],
+                    state.verse[1],
+                    state.verse[2],
+                    state.bookChoice,
+                    chapterChoice, points].join(','),
             });
             return {
                 chapterChoice,
