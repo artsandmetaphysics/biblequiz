@@ -120,15 +120,10 @@ class App extends React.Component {
     pickChapter(chapterChoice) {
         this.setState((state) => {
             const points = getPoints(state.bookChoice, chapterChoice, state.verse)
-            gtag('event', 'selection', {
+            gtag('event', 'question', {
                 'event_category': 'pentateuch',
-                'event_label': [
-                    state.verse[0],
-                    state.verse[1],
-                    state.verse[2],
-                    state.bookChoice,
-                    chapterChoice, points].join(','),
-            });
+                'event_value': 1,
+            })
             return {
                 chapterChoice,
                 questionNum: state.questionNum + 1,
