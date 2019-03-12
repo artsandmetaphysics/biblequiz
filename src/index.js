@@ -120,10 +120,15 @@ class App extends React.Component {
     pickChapter(chapterChoice) {
         this.setState((state) => {
             const points = getPoints(state.bookChoice, chapterChoice, state.verse)
-            gtag('event', 'question', {
+            gtag('event', 'selection', {
                 'event_category': 'pentateuch',
-                'event_value': 1,
-            })
+                'event_label': [
+                    state.verse[0],
+                    state.verse[1],
+                    state.verse[2],
+                    state.bookChoice,
+                    chapterChoice, points].join(','),
+            });
             return {
                 chapterChoice,
                 questionNum: state.questionNum + 1,
@@ -337,11 +342,14 @@ function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
 }
 
 function Btn ({children, onClick, color}) {
-    gtag('event', 'click', {
-        'event_category': 'pentateuch',
-        'event_label': String(children)
-    });
-    return <div style={{backgroundColor: color}} className="button" onClick={onClick}>{children}</div>
+    const taggedClick = () => {
+        gtag('event', 'click', {
+            'event_category': 'pentateuch',
+            'event_label': String(children),
+        });
+        return onClick();
+    };
+    return <div style={{backgroundColor: color}} className="button" onClick={taggedClick}>{children}</div>
 }
 
 function recordHistoricalScore(score) {
