@@ -3,15 +3,13 @@
 // local storage that uses an older version.
 const CURRENT_VERSION = 1;
 
-const QUESTIONS_PER_QUIZ = 10;
-
 // the max number of questions and answers to store (these are useful for
 // suggesting books to study and/or avoiding verses that people have already
 // seen)
-const HISTORICAL_QA_MAX_SIZE = 4000;
+export const HISTORICAL_QA_MAX_SIZE = 4000;
 
 // the max number of historical scores to save for each mode, quiz combo
-const MAX_QUIZ_HISTORY_SIZE = 100;
+export const MAX_QUIZ_HISTORY_SIZE = 100;
 
 // note: we don't bother creating copies of the whole state each time
 // also note: we pass in the getQuestion to make the reducer "pure" and
@@ -25,7 +23,7 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
                 throw new Error('start quiz when current answer not cleared')
             }
             state.quiz = action.quiz;
-            if (state.currentQuestion === null) {
+            if (state.currentQuestion === null && state.quiz !== null) {
                 state.currentQuestion = getQuestion(state.quiz, state.historicalQAs);
             }
             state.quizQAs = [];
@@ -52,8 +50,8 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
                 const score = scoreQuiz(state.mode, state.quizQAs)
                 const now = new Date().toLocaleString();
                 const entry = [score, now];
-                state.quizHistory = archiveQuizHistory(
-                        state.quizHistory,
+                state.gameHistory = archiveQuizHistory(
+                        state.gameHistory,
                         state.mode,
                         state.quiz,
                         entry,
@@ -70,30 +68,22 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
                 state.currentQuestion = null;
             }
         }
-
-        // Save to local state so refreshing the page doesn't drop the quiz.
-        // There may be a performance issue with this once the historicalQAs get
-        // very long
-        //saveState(state);
         return state;
     }
 }
 
-export function archiveQuizHistory(quizHistory, mode, quiz, entry, mazSize) {
-    quizHistory.latest = entry;
-    if (quizHistory[mode] === undefined) {
-        quizHistory[mode] = {}
-    }
-    if (quizHistory[mode][quiz] === undefined) {
-        quizHistory[mode][quiz] = []
+export function archiveQuizHistory(gameHistory, mode, quiz, entry, quizHistorySize) {
+    gameHistory.latest = entry;
+    if (gameHistory[mode][quiz] === undefined) {
+        gameHistory[mode][quiz] = []
     }
 
-    quizHistory[mode][quiz].push(entry);
-    quizHistory[mode][quiz].sort((h1, h2) => h2[0] - h1[0]);
-    if (quizHistory[mode][quiz].length > mazSize) {
-        quizHistory[mode][quiz].pop();
+    gameHistory[mode][quiz].push(entry);
+    gameHistory[mode][quiz].sort((h1, h2) => h2[0] - h1[0]);
+    if (gameHistory[mode][quiz].length > quizHistorySize) {
+        gameHistory[mode][quiz].pop();
     }
-    return quizHistory
+    return gameHistory
 }
 
 export function loadState() {
@@ -113,19 +103,6 @@ export function saveState(state) {
     localSave('state', state);
 }
 
-export function isFullAnswer(answer, mode) {
-    if (mode === 'basic') {
-        return answer.length === 1;
-    } else if (mode === 'moses') {
-        return answer.length === 2;
-    } else if (mode === 'jesus') {
-        return answer.length === 3;
-    } else {
-        throw new Error();
-    }
-}
-
-
 export function getDefaultState() {
     return {
         version: CURRENT_VERSION,
@@ -134,7 +111,7 @@ export function getDefaultState() {
         quizQAs: [],
         currentQuestion: null,
         currentAnswer: null,
-        quizHistory: {},
+        gameHistory: {basic: {}, moses: {}, jesus: {}},
         historicalQAs: [],
         historicalQAsIndex: 0,
     }

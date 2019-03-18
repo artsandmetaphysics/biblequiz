@@ -1,253 +1,306 @@
-import "./index.scss";
-
-const QUESTIONS_PER_QUIZ = 10;
-
-const BOOKS = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
-
-const CHAPTERS_PER_BOOK = [50, 40, 27, 36, 34];
+import {buildReducer, HISTORICAL_QA_MAX_SIZE, MAX_QUIZ_HISTORY_SIZE, loadState, saveState} from './state.js';
+import {isGameOver, scoreQuiz, getUiState, quizBooks, quizLabel, QUESTIONS_PER_QUIZ, newTestamentStatus, oldTestamentStatus, modeStatus, qaStatus, scoreQA, isGameDone} from './selectors.js';
+import {getRandomVerse, bookLabel, getChaptersPerBook, getVersesPerChapter, getPrevVerse, getNextVerse, getVerseText, verseToLabel} from './bible.js';
+import {range} from './util.js';
+import './index.scss';
 
 let gtag = window.gtag || function() {};
 
-function getRandomVerse() {
-    const bookIndex = getRandomIntWeighted(CHAPTERS_PER_BOOK);
-    const chapters = PENTATEUCH[bookIndex].chapters;
-    const chapterIndex = getRandomInt(chapters.length);
-    const verses = chapters[chapterIndex].verses;
-    const verseIndex = getRandomInt(verses.length)
-    const verse = [bookIndex + 1, chapterIndex + 1, verseIndex + 1];
-    return verse;
-}
-
-function verseToLabel(verseArray) {
-    let bookNum, chapter, verse;
-    if (verseArray.length === 3) {
-        [bookNum, chapter, verse] = verseArray;
-        return bookNumToLabel(bookNum) + ' ' + chapter + '.' + verse;
-    } else if (verseArray.length === 2) {
-        [bookNum, chapter] = verseArray;
-        return bookNumToLabel(bookNum) + ' ' + chapter;
+class AppErrorContainer extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {error: false};
     }
-}
-
-function bookNumToLabel(bookNum) {
-    return BOOKS[bookNum - 1];
-}
-
-function getRandomInt(max) {
-    return Math.floor(Math.random() * Math.floor(max));
-}
-
-function getRandomIntWeighted(lengths) {
-    // used to weight books of bible by chapter length
-    const sum = lengths.reduce((partial_sum, a) => partial_sum + a);
-    const i = getRandomInt(sum);
-    let index = 0;
-    let runningSum = lengths[index];
-    while (i >= runningSum) {
-        index += 1;
-        runningSum += lengths[index];
+    static getDerivedStateFromError(error) {
+        return {error: true};
     }
-    return index;
-}
-
-function getPoints(bookChoice, chapterChoice, answerVerseArray) {
-    let points = 0;
-    const [bookAnswer, chapterAnswer, _] = answerVerseArray;
-    if (bookChoice === bookAnswer) {
-        points += 10;
-        const chaptersOff = Math.abs(chapterChoice - chapterAnswer);
-        if (chaptersOff === 0) {
-            points += 90;
-        } else if (chaptersOff <= 5) {
-            points += (60 - 10*chaptersOff)
+    componentDidCatch(error, info) {
+        console.error(error, info);
+    }
+    render() {
+        if (!this.state.error) {
+            return <App />
+        } else {
+            return (
+                <div className="app">
+                    <HomeHeader />
+                    <ErrorBody />
+                    <HomeFooter />
+                </div>
+            );
         }
-    }
-    return points;
-}
-
-function getVerseText(verseArray) {
-    const [bookNum, chapterNum, verseNum] = verseArray;
-    const book = PENTATEUCH[bookNum - 1];
-    const chapter = book.chapters[chapterNum - 1]
-    const verse = chapter.verses[verseNum - 1];
-    if (verse === undefined) {
-        return null;
-    } else {
-        return verse[String(verseNum)];
-    }
-}
-
-function flatArraysEqual(a, b) {
-    if (a.length !== b.length) {
-        return false;
-    } else {
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) {
-                return false;
-            }
-        }
-        return true;
     }
 }
 
 class App extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            score: 0,
-            questionNum: 0,
-            verse: getRandomVerse(),
-            bookChoice: null,
-            chapterChoice: null,
-            history: loadHistory(),
-            showHistory: false,
+        const getQuestion = (quiz, historicalQAs) => {
+            return getRandomVerse(quizBooks(quiz), historicalQAs);
         };
-        this.pickBook = this.pickBook.bind(this);
-        this.undoBookChoice = this.undoBookChoice.bind(this);
-        this.pickChapter = this.pickChapter.bind(this);
-        this.nextQuestion = this.nextQuestion.bind(this);
-        this.nextQuiz = this.nextQuiz.bind(this);
+        this.reducer = buildReducer(
+            MAX_QUIZ_HISTORY_SIZE,
+            HISTORICAL_QA_MAX_SIZE,
+            isGameOver,
+            getQuestion,
+            scoreQuiz);
+        this.state = loadState();
+        this.dispatch = this.dispatch.bind(this);
     }
 
-    pickBook(bookChoice) {
-        this.setState({bookChoice});
-    }
-
-    undoBookChoice() {
-        this.setState({bookChoice: null});
-    }
-
-    pickChapter(chapterChoice) {
-        this.setState((state) => {
-            const points = getPoints(state.bookChoice, chapterChoice, state.verse)
-            gtag('event', 'selection', {
-                'event_category': 'pentateuch',
-                'event_label': [
-                    state.verse[0],
-                    state.verse[1],
-                    state.verse[2],
-                    state.bookChoice,
-                    chapterChoice, points].join(','),
-            });
-            return {
-                chapterChoice,
-                questionNum: state.questionNum + 1,
-                score: state.score + points,
-            };
+    dispatch(action) {
+        this.setState((oldState) => {
+            const updatedState = this.reducer(oldState, action);
+            // Save to local state so refreshing the page doesn't drop the quiz.
+            // There may be a performance issue with this once the historicalQAs get
+            // very long; avoid blocking UI actions by queuing at the back of
+            // the event loop
+            setTimeout(() => saveState(updatedState), 0);
+            return updatedState;
         });
-    }
-
-    nextQuestion() {
-        this.setState((state) => {
-            const newState = {
-                ...state,
-                verse: getRandomVerse(),
-                bookChoice: null,
-                chapterChoice: null,
-            };
-            if (state.questionNum === QUESTIONS_PER_QUIZ) {
-                let dataPoint = recordHistoricalScore(state.score);
-                newState.history.push(dataPoint);
-                newState.score = 0;
-                newState.questionNum = 0;
-                newState.showHistory = true;
-            }
-            return newState;
-        });
-    }
-
-    nextQuiz() {
-        this.setState({showHistory: false});
     }
 
     render() {
-        const {score, questionNum, verse, bookChoice, chapterChoice, showHistory, history} = this.state;
-        let onClick;
-        let showAnswer;
-        if (showHistory) {
-            onClick = this.nextQuiz;
-        } else if (bookChoice === null) {
-            onClick = this.pickBook;
-            showAnswer = false;
-        } else if (chapterChoice === null) {
-            onClick = this.pickChapter;
-            showAnswer = false;
+        const uiState = getUiState(this.state, isGameOver);
+        const {gameHistory, mode, quiz} = this.state;
+        let header, answerPanel, body, footer;
+        if (uiState === 'home') {
+            header = <HomeHeader />
+            answerPanel = null
+            body = <HomeBody gameHistory={gameHistory} mode={mode} dispatch={this.dispatch} />
+            footer = <HomeFooter />
         } else {
-            onClick = this.nextQuestion;
-            showAnswer = true;
+            const question = this.state.currentQuestion;
+            const answer = this.state.currentAnswer;
+            const {quizQAs} = this.state;
+            const score = scoreQuiz(mode, quizQAs);
+            const questionNum = quizQAs.length;
+            const completePercent = questionNum/QUESTIONS_PER_QUIZ;
+            header = <GameHeader quiz={quiz} mode={mode} score={score}
+                    completePercent={completePercent} />
+            answerPanel = <AnswerPanel show={uiState === 'review'} question={question} />;
+            if (uiState === 'prompt') {
+                body = <PromptBody question={question} />
+                footer = <PromptFooter mode={mode} quiz={quiz} question={question} 
+                        dispatch={this.dispatch} />
+            } else if (uiState === 'review') {
+                const gameOver = isGameOver(mode, quizQAs);
+                body = <ReviewBody question={question} />
+                footer = <ReviewFooter mode={mode} question={question} 
+                        answer={answer} dispatch={this.dispatch} gameOver={gameOver}/>
+            } else if (uiState === 'score') {
+                const quizHistory = gameHistory[mode][quiz];
+                const latest = gameHistory.latest;
+                body = <ScoreBody quizHistory={quizHistory} latest={latest} />
+                footer = <ScoreFooter quiz={quiz} dispatch={this.dispatch} />
+            }
         }
         return (
             <div className="app">
-                <Header score={score} questionNum={questionNum} questionsPerQuiz={QUESTIONS_PER_QUIZ} />
-                {showHistory ?
-                    <ScoreBody history={history} /> :
-                    <Body showAnswer={showAnswer}
-                            verse={verse}
-                            bookChoice={bookChoice}
-                            chapterChoice={chapterChoice} />
-                }
-                <Footer bookChoice={bookChoice}
-                        chapterChoice={chapterChoice}
-                        onClick={onClick}
-                        goBack={this.undoBookChoice}
-                        showHistory={showHistory} />
+                {header}
+                {answerPanel}
+                {body}
+                {footer}
             </div>
         );
     }
 }
 
-function Header ({score, questionNum, questionsPerQuiz}) {
-    // TODO: get glow animation to retrigger
+function Header ({children}) {
+    return <div className="header">{children}</div>
+}
+
+function GameHeader ({quiz, mode, score, completePercent}) {
+    // TODO: make look fancier when in higher modes
     return (
-        <div className="header">
-            <h2>Pentateuch Quiz</h2>
-            <h2 className="glow">SCORE: {score}</h2>
-            <h2 className="glow">{questionNum}/{questionsPerQuiz}</h2>
-        </div>
+        <Header>
+            <h2 className="header__quiz-name">{quizLabel(quiz)}</h2>
+            <h2 className="header__score">{score}</h2>
+            <ProgressBar completePercent={completePercent} />
+        </Header>
     );
 }
 
+function HomeHeader () {
+    return (
+        <Header>
+            <h1 className="header__home">
+                HardBibleQuiz
+                <span className="text-muted">.com</span>
+            </h1>
+        </Header>
+    );
+}
 
-function Body ({showAnswer, verse, bookChoice, chapterChoice}) {
-    if (showAnswer) {
-        let resultLabel;
-        const choice = verseToLabel([bookChoice, chapterChoice]);
-        const points = getPoints(bookChoice, chapterChoice, verse);
-        if (verse[0] === bookChoice && verse[1] === chapterChoice) {
-            resultLabel = <p className="body__correct">CORRECT!<br />+{points} points!</p>;
-        } else if (verse[0] === bookChoice) {
-            resultLabel = <p className="body__close">Close, you chose {choice}.<br />+{points} points</p>;
+function ProgressBar ({completePercent}) {
+    return <div className="header__progress-bar" style={{width: 100*completePercent + '%'}} />
+}
+
+function AnswerPanel({show, question}) {
+    const className = show ? 'answer-panel answer-panel--show' : 'answer-panel'
+    const text = show ? verseToLabel(question) : '';
+    return <div className={className}>{text}</div>
+}
+
+function Footer ({children}) {
+    return <div className="footer">{children}</div>
+}
+
+function HomeFooter () {
+    // TODO: implement this
+    return (
+        <Footer />
+    );
+}
+
+function FooterLinks () {
+    return (
+        <ul className="footer__links">
+            <li><a>Terms</a></li>
+            <li><a>About</a></li>
+            <li><ContactUs>Contact</ContactUs></li>
+        </ul>
+    );
+}
+
+function ContactUs ({children}) {
+    return <a href="mailto:artsandmetaphysics@gmail.com">{children}</a>
+}
+
+class PromptFooter extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {partialAnswer: []};
+        this.back = this.back.bind(this);
+        this.choose = this.choose.bind(this);
+        this.getChoices = this.getChoices.bind(this);
+    }
+    choose(number) {
+        const {mode, dispatch} = this.props;
+        const finalLevel = {basic: 1, moses: 2, jesus: 3}[mode];
+        const answer = [...this.state.partialAnswer, number];
+        if (answer.length === finalLevel) {
+            dispatch({type: 'ANSWER', answer});
         } else {
-            resultLabel = <p className="body__wrong">Wrong, you chose {choice}</p>;
+            this.setState({partialAnswer: answer});
         }
+    }
+    back() {
+        this.setState(({oldPartialAnswer}) => {
+            const newAnswer = [...oldPartialAnswer];
+            newAnswer.pop();
+            return {partialAnswer: newAnswer};
+        });
+    }
+    getChoices() {
+        const {quiz} = this.props;
+        const [book, chapter] = this.state.partialAnswer;
+        const numToChoice = (c) => ({value: c, label: String(c + 1)});
+
+        let choices;
+        if (chapter) {
+            choices = range(getVersesPerChapter(book, chapter)).map(numToChoice);
+        } else if (book) {
+            choices = range(getChaptersPerBook(book)).map(numToChoice);
+        } else {
+            choices = quizBooks(quiz).map(b => ({value: b, label: bookLabel(b)}));
+        }
+        return choices;
+    }
+    render() {
+        const {mode, quiz, question, dispatch} = this.props;
+        const showBackBtn = this.state.partialAnswer.length > 0;
+        const choices = this.getChoices();
         return (
-            <div className="body">
-                <h2>{verseToLabel(verse)}</h2>
-                <Verses verseArray={verse} />
-                {resultLabel}
-            </div>
-        );
-    } else {
-        return (
-            <div className="body">
-                <Verses verseArray={verse} />
-            </div>
+            <Footer>
+                <FooterText>
+                    Which book is this 
+                    <span className="text-highlight"> random verse </span>
+                    found in?
+                </FooterText>
+                <BtnSet>
+                    {choices.map((c) => {
+                    return <Btn key={c.value} onClick={() => this.choose(c.value)}>{c.label}</Btn>
+                    })}
+                    {showBackBtn ? <Btn state="secondary" onClick={this.back}>Back</Btn> : null}
+                </BtnSet>
+            </Footer>
         );
     }
 }
 
-function ScoreBody ({history}) {
-    const byScore = (a, b) => b.score - a.score;
-    const previousScores = history.slice();
-    const current = previousScores.pop();  // current score is on end
-    const isCurrent = (a) => a.dateTimeString === current.dateTimeString;
-    previousScores.sort(byScore);
-    const topTen = previousScores.slice(0, 9);
-    topTen.push(current);
-    topTen.sort(byScore);
+function ReviewFooter ({mode, question, answer, gameOver, dispatch}) {
+    const status = qaStatus(mode, [question, answer]);
+    const points = scoreQA(mode, [question, answer]);
+    const btnState = {
+        correct: 'success',
+        close: 'secondary',
+        incorrect: 'error',
+    }[status];
+    const onClick = () => dispatch({type: 'NEXT'});
+    const btnText = gameOver ? 'Continue' : 'Next Verse';
+    let prompt, choiceText;
+    if (status === 'correct') {
+        prompt = <span className='text-success'>CORRECT! +{points}</span>
+    } else if (status === 'close') {
+        choiceText = verseToLabel(answer);
+        prompt = <span className='text-muted'>Close, you selected <span className='text-highlight'>{choiceText}</span> +{points}</span>;
+    } else if (status === 'incorrect') {
+        choiceText = verseToLabel(answer);
+        prompt = <span className='text-error'>Not quite, you selected <span className='text-highlight'>{choiceText}</span></span>;
+    }
+    return (
+        <Footer>
+            <FooterText>{prompt}</FooterText>
+            <BtnSet>
+                <Btn state={btnState} onClick={onClick}>{btnText}</Btn>
+            </BtnSet>
+        </Footer>
+    );
+}
+
+function ScoreFooter ({quiz, dispatch}) {
+    const switchQuiz = () => dispatch({type: 'SELECT_QUIZ', quiz: null});
+    const playAgain = () => dispatch({type: 'SELECT_QUIZ', quiz});
+    return (
+        <Footer>
+            <FooterText>Thank you for playing!</FooterText>
+            <BtnSet>
+                <Btn state="secondary" onClick={switchQuiz}>Switch Quiz</Btn>
+                <Btn onClick={playAgain}>Play Again</Btn>
+            </BtnSet>
+        </Footer>
+    );
+}
+
+function BtnSet({children}) {
+    return <div className='footer__btn-set'>{children}</div>
+}
+
+function FooterText ({children})  {
+    return <p className="footer__prompt text-muted">{children}</p>
+}
+
+function ButtonSet ({children}) {
+    return <div className="footer__button-set">{children}</div>
+}
+
+function Body ({children}) {
+    return <div className="body">{children}</div>
+}
+
+function PromptBody ({question}) {
+    return <Body><Verses verse={question} /></Body>
+}
+
+function ReviewBody ({question}) {
+    return <Body><Verses verse={question} /></Body>
+}
+
+function ScoreBody ({quizHistory, latest}) {
+    const isCurrent = (a) => a[1] === latest[1];
     return (
         <div className="body">
-            <p>Thank you for playing!</p>
             <table>
                 <thead>
                     <tr>
@@ -257,12 +310,26 @@ function ScoreBody ({history}) {
                     </tr>
                 </thead>
                 <tbody>
-                    {topTen.map((item, i) => {
+                    {quizHistory.map((item, i) => {
+                        let style;
+                        if (isCurrent(item)) {
+                            let color;
+                            if (quizHistory.length === 1) {
+                                color = '#341F89'; // primary
+                            } else if (i === (quizHistory.length - 1)) {
+                                color = '#EB5757';
+                            } else {
+                                color = '#28891F';
+                            }
+                            style = {color};
+                        } else {
+                            style = {};
+                        }
                         return (
-                            <tr key={i} style={isCurrent(item) ? {color: '#23BD98'}: {}}>
+                            <tr key={i} style={style}>
                                 <td>{i + 1}</td>
-                                <td style={{textAlign: 'right'}}>{item.score}</td>
-                                <td>{item.dateTimeString}</td>
+                                <td style={{textAlign: 'right'}}>{item[0]}</td>
+                                <td>{item[1]}</td>
                             </tr>
                         );
                     })}
@@ -272,121 +339,112 @@ function ScoreBody ({history}) {
     );
 }
 
-function Verses({verseArray}) {
-    const prevVerseText = getPrevVerse(verseArray);
-    const verseText = getVerseText(verseArray);
-    const nextVerseText = getNextVerse(verseArray);
+function ErrorBody () {
     return (
-        <p>
-            {prevVerseText ? <span className="body__context">{prevVerseText + ' '}</span> : null}
-            <span>{verseText}</span>
-            {nextVerseText ? <span className="body__context">{' ' + nextVerseText}</span> : null}
+        <Body>
+            <h2 className="text-error">Application Error</h2>
+            <p className="text-muted">
+                We apologize, but something unexpected occured.  Try refreshing the
+                page.  If the error continues to occur, please <ContactUs>let us
+                know</ContactUs>.
+            </p>
+        </Body>
+    );
+}
+
+function HomeBody ({gameHistory, mode, dispatch}) {
+    const BoundQuizBtn = ({quiz, status = null}) => {
+        return <QuizBtn gameHistory={gameHistory} mode={mode} quiz={quiz} dispatch={dispatch} status={status} />
+    }
+    return (
+        <Body>
+            <p className="text-muted">A fun and challenging way to read the Bible.</p>
+            <div className="body__quiz-set">
+                <BoundQuizBtn quiz='pentateuch' />
+                <BoundQuizBtn quiz='historical' />
+                <BoundQuizBtn quiz='poetryandwisdom' />
+                <BoundQuizBtn quiz='prophecy' />
+                <BoundQuizBtn quiz='oldtestament' status={oldTestamentStatus(gameHistory, mode)}/>
+            </div>
+            <div className="body__quiz-set">
+                <BoundQuizBtn quiz='gospels' />
+                <BoundQuizBtn quiz='epistlesetc' />
+                <BoundQuizBtn quiz='newtestament' status={newTestamentStatus(gameHistory, mode)}/>
+            </div>
+            <div className="body__quiz-set">
+                <ModeBtn mode={mode} dispatch={dispatch} status={modeStatus(gameHistory, 'moses')}/>
+            </div>
+        </Body>
+    );
+}
+
+function QuizBtn ({gameHistory, mode, quiz, dispatch, status}) {
+    const locked = status && status[0] !== status[1];
+    const startQuiz = () => dispatch({type: 'SELECT_QUIZ', quiz});
+    const onClick = locked ? () => {} : startQuiz;
+    const gameDone = isGameDone(gameHistory, mode, quiz);
+    const state = locked ? 'disabled' : (gameDone ? 'success' : 'primary');
+    const quizHistory = gameHistory[mode][quiz];
+    const topScore = quizHistory !== undefined ? quizHistory[0][0] : null;
+    // NOTE: duplicattion between here and ModeBtn
+    return (
+        <Btn onClick={onClick} state={state}>
+            <span className="vertical-center">
+                <span className="top-score">{locked ? <Lock /> : topScore}</span>
+                <h2>{quizLabel(quiz)}</h2>
+            </span>
+            {locked ? <span>{status[0] + '/' + status[1]}</span> : <span />}
+        </Btn>
+    );
+}
+
+function Lock () {
+    return (
+        <svg width="11" height="17" viewBox="0 0 11 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.5 7.63416V3.73172C2.5 0.089432 8.5 0.0894241 8.5 3.73172V7.63416" stroke="white" stroke-width="2"/>
+            <path d="M0 8.11383C0 7.56155 0.447715 7.11383 1 7.11383H10C10.5523 7.11383 11 7.56155 11 8.11383V16C11 16.5523 10.5523 17 10 17H1C0.447715 17 0 16.5523 0 16V8.11383Z" fill="white"/>
+        </svg>
+    );
+}
+
+function ModeBtn ({nextMode, dispatch, status}) {
+    const locked = nextMode === undefined;
+    const onClick = locked ? () => {} : dispatch({type: 'SELECT_MODE', mode: nextMode});
+    const state = locked ? 'disabled' : 'primary';
+    // NOTE: duplicattion between here and QuizBtn
+    return (
+        <Btn onClick={onClick} state={state}>
+            <span className="vertical-center">
+                <span className="top-score">{locked ? <Lock /> : ''}</span>
+                <h2>Moses Mode</h2>
+            </span>
+            {locked ? <span>{status[0] + '/' + status[1]}</span> : <span />}
+        </Btn>
+    );
+}
+
+function Btn ({children, onClick = () => {}, state = 'primary'}) {
+    return (
+        <div className={"btn btn--" + state} onClick={onClick}>
+            {children}
+        </div>
+    );
+}
+
+function Verses({verse}) {
+    const prevVerse = getPrevVerse(verse);
+    const verseText = getVerseText(verse);
+    const nextVerse = getNextVerse(verse);
+    return (
+        <p className="body__verses">
+            {prevVerse ? <span className="text-muted">{getVerseText(prevVerse) + ' '}</span> : null}
+            <span className="text-main">{verseText}</span>
+            {nextVerse ? <span className="text-muted">{' ' + getVerseText(nextVerse)}</span> : null}
         </p>
     );
 }
 
-function getPrevVerse(verseArray) {
-    const [bookNum, chapterNum, verseNum] = verseArray;
-    if (verseNum === 1) {
-        return null;
-    } else {
-        return getVerseText([bookNum, chapterNum, verseNum - 1]);
-    }
-}
-
-function getNextVerse(verseArray) {
-    const [bookNum, chapterNum, verseNum] = verseArray;
-    // relies on `getVerseText` return undefined if it is the last verse in a chapter
-    return getVerseText([bookNum, chapterNum, verseNum + 1]) || null;
-}
-
-const BOOK_COLORS = ['#EC6B34', '#3C64DC', '#55AEEE', '#AE9BFB', '#F59A2F'];
-
-function Footer ({bookChoice, chapterChoice, onClick, goBack, showHistory}) {
-    if (showHistory) {
-        return (
-            <div className="footer">
-                <p className="footer__help">Please share with friends!<br />More quizzes will come if there is interest.  Verses choosen randomly. <a href="mailto:artsandmetaphysics@gmail.com">Contact Creator</a></p>
-                <Btn color={'#5D4DC3'} onClick={onClick}>Start New Quiz</Btn>
-            </div>
-        );
-    } else if (bookChoice === null) {
-        return (
-            <div className="footer">
-                <p className="footer__help">Which book is the randomly selected <span style={{color: '#333'}}>black</span> verse in?</p>
-                <Btn color={BOOK_COLORS[0]} onClick={() => onClick(1)}>Genesis</Btn>
-                <Btn color={BOOK_COLORS[1]} onClick={() => onClick(2)}>Exodus</Btn>
-                <Btn color={BOOK_COLORS[2]} onClick={() => onClick(3)}>Leviticus</Btn>
-                <Btn color={BOOK_COLORS[3]} onClick={() => onClick(4)}>Numbers</Btn>
-                <Btn color={BOOK_COLORS[4]} onClick={() => onClick(5)}>Deut.</Btn>
-            </div>
-        );
-    } else if (chapterChoice === null) {
-        const numChapters = CHAPTERS_PER_BOOK[bookChoice - 1];
-        const chapters = Array.apply(null, {length: numChapters}).map(Number.call, Number);
-        const color = BOOK_COLORS[bookChoice - 1];
-        return (
-            <div className="footer">
-                <p className="footer__help">And which chapter?</p>
-                {chapters.map(i => <Btn color={color} key={i} onClick={() => onClick(i + 1)}>{i + 1}</Btn>)}
-                <Btn color={"#999"} onClick={goBack}>Back</Btn>
-            </div>
-        );
-    } else {
-        return (
-            <div className="footer">
-                <Btn color={'#5D4DC3'} onClick={onClick}>Next Question</Btn>
-            </div>
-        );
-    }
-}
-
-function Btn ({children, onClick, color}) {
-    const taggedClick = () => {
-        gtag('event', 'click', {
-            'event_category': 'pentateuch',
-            'event_label': String(children),
-        });
-        return onClick();
-    };
-    return <div style={{backgroundColor: color}} className="button" onClick={taggedClick}>{children}</div>
-}
-
-function recordHistoricalScore(score) {
-    gtag('event', 'finish', {
-        'event_category': 'pentateuch',
-        'event_label': 'score',
-        'value': score,
-    });
-    const dateTimeString = new Date().toLocaleString();
-    const scores = loadHistory();
-    const dataPoint = {dateTimeString, score};
-    scores.push(dataPoint);
-    localSave('history', scores);
-    return dataPoint;
-}
-
-function loadHistory() {
-    let scores = localLoad('history');
-    if (scores === null) {
-        scores = [];
-    }
-    return scores;
-}
-
-function localSave(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
-}
-
-function localLoad(key, data) {
-    try {
-        return JSON.parse(localStorage.getItem('history'));
-    } catch {
-        return null;
-    }
-}
-
 ReactDOM.render(
-  <App name="Taylor" />,
+  <AppErrorContainer />,
   document.getElementById('app')
 );
