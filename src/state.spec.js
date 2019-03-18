@@ -1,5 +1,5 @@
-import { getDefaultState, buildReducer } from './state.js';
-import { scoreQuiz } from './selectors.js'
+import {getDefaultState, buildReducer} from './state.js';
+import {scoreQuiz, getUiState} from './selectors.js'
 
 test('state changes through a few games', () => {
     let state = getDefaultState();
@@ -10,7 +10,10 @@ test('state changes through a few games', () => {
     const getQuestion = (quiz, historicalQAs) => [0, 0, answerVerse++];
     let reducer = buildReducer(quizHistorySize, historicalQASize, isGameOver, getQuestion, scoreQuiz);
 
+    expect(getUiState(state, isGameOver)).toBe('home');
+
     state = reducer(state, {type: 'SELECT_QUIZ', quiz: 'q1'});
+    expect(getUiState(state, isGameOver)).toBe('prompt');
     expect(scoreQuiz(state.mode, state.quizQAs)).toBe(0);
     expect(isGameOver(state.mode, state.quizQAs)).toBe(false);
     expect(state.historicalQAs.length).toBe(0);
@@ -18,22 +21,26 @@ test('state changes through a few games', () => {
 
     // PLAY FIRST GAME; perfect score
     state = reducer(state, {type: 'ANSWER', answer: [0]});
+    expect(getUiState(state, isGameOver)).toBe('review');
     expect(answerVerse).toBe(1);
     expect(scoreQuiz(state.mode, state.quizQAs)).toBe(10);
     expect(isGameOver(state.mode, state.quizQAs)).toBe(false);
     expect(state.historicalQAs.length).toBe(1);
     expect(state.historicalQAsIndex).toBe(0);
     state = reducer(state, {type: 'NEXT'});
+    expect(getUiState(state, isGameOver)).toBe('prompt');
 
     state = reducer(state, {type: 'ANSWER', answer: [0]});
+    expect(getUiState(state, isGameOver)).toBe('review');
     expect(answerVerse).toBe(2);
     expect(scoreQuiz(state.mode, state.quizQAs)).toBe(20);
     expect(isGameOver(state.mode, state.quizQAs)).toBe(true);
     expect(state.historicalQAs.length).toBe(2);
     expect(state.historicalQAsIndex).toBe(0);
-    expect(state.quizHistory['basic']['q1'].length).toBe(1);
-    expect(state.quizHistory['basic']['q1'][0][0]).toBe(20);
+    expect(state.gameHistory['basic']['q1'].length).toBe(1);
+    expect(state.gameHistory['basic']['q1'][0][0]).toBe(20);
     state = reducer(state, {type: 'NEXT'});
+    expect(getUiState(state, isGameOver)).toBe('score');
 
     // CHOOSE TO PLAY AGAIN; terrible score
     state = reducer(state, {type: 'SELECT_QUIZ', quiz: 'q1'});
@@ -52,9 +59,9 @@ test('state changes through a few games', () => {
         [[0, 0, 1], [0]],  // oldest (second response from game 1)
         [[0, 0, 2], [1]],  // oldest (first response from game 2)
     ]);
-    expect(state.quizHistory['basic']['q1'].length).toBe(2);
-    expect(state.quizHistory['basic']['q1'][0][0]).toBe(20);
-    expect(state.quizHistory['basic']['q1'][1][0]).toBe(0);
+    expect(state.gameHistory['basic']['q1'].length).toBe(2);
+    expect(state.gameHistory['basic']['q1'][0][0]).toBe(20);
+    expect(state.gameHistory['basic']['q1'][1][0]).toBe(0);
     state = reducer(state, {type: 'NEXT'});
 
     // PLAY AGAIN; middle score should push out terrible
@@ -63,26 +70,29 @@ test('state changes through a few games', () => {
     state = reducer(state, {type: 'NEXT'});
     state = reducer(state, {type: 'ANSWER', answer: [1]});
     state = reducer(state, {type: 'NEXT'});
-    expect(state.quizHistory['latest'][0]).toBe(10);
-    expect(state.quizHistory['basic']['q1'].length).toBe(2);
-    expect(state.quizHistory['basic']['q1'][0][0]).toBe(20);
-    expect(state.quizHistory['basic']['q1'][1][0]).toBe(10);
+    expect(state.gameHistory['latest'][0]).toBe(10);
+    expect(state.gameHistory['basic']['q1'].length).toBe(2);
+    expect(state.gameHistory['basic']['q1'][0][0]).toBe(20);
+    expect(state.gameHistory['basic']['q1'][1][0]).toBe(10);
+    expect(getUiState(state, isGameOver)).toBe('score');
 
     // GO BACK TO MENU
     state = reducer(state, {type: 'SELECT_QUIZ', quiz: null});
+    expect(getUiState(state, isGameOver)).toBe('home');
 
     // PLAY a different quiz
     state = reducer(state, {type: 'SELECT_QUIZ', quiz: 'q2'});
+    expect(getUiState(state, isGameOver)).toBe('prompt');
     state = reducer(state, {type: 'ANSWER', answer: [0]});
     state = reducer(state, {type: 'NEXT'});
     state = reducer(state, {type: 'ANSWER', answer: [1]});
     state = reducer(state, {type: 'NEXT'});
-    expect(state.quizHistory['latest'][0]).toBe(10);
-    expect(state.quizHistory['basic']['q1'].length).toBe(2);
-    expect(state.quizHistory['basic']['q1'][0][0]).toBe(20);
-    expect(state.quizHistory['basic']['q1'][1][0]).toBe(10);
-    expect(state.quizHistory['basic']['q2'].length).toBe(1);
-    expect(state.quizHistory['basic']['q2'][0][0]).toBe(10);
+    expect(state.gameHistory['latest'][0]).toBe(10);
+    expect(state.gameHistory['basic']['q1'].length).toBe(2);
+    expect(state.gameHistory['basic']['q1'][0][0]).toBe(20);
+    expect(state.gameHistory['basic']['q1'][1][0]).toBe(10);
+    expect(state.gameHistory['basic']['q2'].length).toBe(1);
+    expect(state.gameHistory['basic']['q2'][0][0]).toBe(10);
 
     // GO BACK TO MENU
     state = reducer(state, {type: 'SELECT_QUIZ', quiz: null});

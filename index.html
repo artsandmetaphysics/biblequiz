@@ -8,9 +8,6 @@
     <link rel="stylesheet" type="text/css" href="/dist/main.css">
     <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
-    <!--<script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>-->
-    <!--<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>-->
-    <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-99663750-2"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -18,8 +15,10 @@
       gtag('js', new Date());
       gtag('config', 'UA-99663750-2');
     </script>
-  <script src="/pentateuch.js"></script>
+  <script src="/dist/bible.js"></script>
   </head>
-  <body id="app"></body>
+  <body>
+    <div id="app"></div>
+  </body>
   <script src="/dist/bundle.js"></script>
 </html>
