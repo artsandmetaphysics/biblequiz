@@ -147,9 +147,13 @@ function Footer ({children}) {
 }
 
 function HomeFooter () {
-    // TODO: implement this
     return (
-        <Footer />
+        <Footer>
+            <p className="home__footer">
+                <ContactUs>Contact Info</ContactUs>.
+                Verses taken from <a href="https://en.wikipedia.org/wiki/King_James_Version">KJV</a>.
+            </p>
+        </Footer>
     );
 }
 
@@ -290,11 +294,11 @@ function Body ({children}) {
 }
 
 function PromptBody ({question}) {
-    return <Body><Verses verse={question} /></Body>
+    return <Body><Verses verse={question} context={1}/></Body>
 }
 
 function ReviewBody ({question}) {
-    return <Body><Verses verse={question} /></Body>
+    return <Body><Verses verse={question} context={1000} /></Body>
 }
 
 function ScoreBody ({quizHistory, latest}) {
@@ -431,17 +435,55 @@ function Btn ({children, onClick = () => {}, state = 'primary'}) {
     );
 }
 
-function Verses({verse}) {
-    const prevVerse = getPrevVerse(verse);
-    const verseText = getVerseText(verse);
-    const nextVerse = getNextVerse(verse);
-    return (
-        <p className="body__verses">
-            {prevVerse ? <span className="text-muted">{getVerseText(prevVerse) + ' '}</span> : null}
-            <span className="text-main">{verseText}</span>
-            {nextVerse ? <span className="text-muted">{' ' + getVerseText(nextVerse)}</span> : null}
-        </p>
-    );
+class Verses extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    componentDidMount() {
+        this.scrollToVerse();
+    }
+    componentDidUpdate() {
+        this.scrollToVerse();
+    }
+    scrollToVerse() {
+        const current = document.getElementById('current-verse');
+        current.scrollIntoView({
+            behavior: 'auto',
+            block: 'center',
+            inline: 'center'
+        });
+    }
+    render() {
+        const {verse, context} = this.props;
+        const prevVerses = [];
+        const postVerses = [];
+
+        let currentVerse = verse;
+        for (let i = 0; i < context; i++) {
+            currentVerse = getPrevVerse(currentVerse);
+            if (currentVerse === null) {
+                break;
+            }
+            prevVerses.unshift(getVerseText(currentVerse));
+        }
+
+        currentVerse = verse;
+        for (let i = 0; i < context; i++) {
+            currentVerse = getNextVerse(currentVerse);
+            if (currentVerse === null) {
+                break;
+            }
+            postVerses.push(getVerseText(currentVerse));
+        }
+        const verseText = getVerseText(verse);
+        return (
+            <p className="body__verses">
+                <span className="text-muted">{prevVerses.join(' ')}</span>
+                <span id={'current-verse'}className="text-main">{' ' + verseText + ' '}</span>
+                <span className="text-muted">{postVerses.join(' ')}</span>
+            </p>
+        );
+    }
 }
 
 ReactDOM.render(
