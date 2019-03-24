@@ -151,7 +151,7 @@ function HomeFooter () {
         <Footer>
             <p className="home__footer">
                 <ContactUs>Contact Info</ContactUs>.
-                Verses taken from <a href="https://en.wikipedia.org/wiki/King_James_Version">KJV</a>.
+                Verses taken from the <a href="https://en.wikipedia.org/wiki/World_English_Bible">WEB translation</a>.
             </p>
         </Footer>
     );
