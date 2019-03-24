@@ -26,6 +26,11 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
             if (state.currentQuestion === null && state.quiz !== null) {
                 state.currentQuestion = getQuestion(state.quiz, state.historicalQAs);
             }
+
+            gtag('event', 'quiz-start', {
+                'event_category': state.quiz,
+                'value': 1,
+            });
             state.quizQAs = [];
         } else if (action.type === 'SELECT_MODE') {
             if (state.quiz === null) {
@@ -34,6 +39,10 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
                 throw new Error('mode change during quiz');
             }
         } else if (action.type === 'ANSWER') {
+            gtag('event', 'quiz-answer', {
+                'event_category': state.quiz,
+                'value': 1,
+            });
             if (state.currentAnswer !== null) {
                 throw new Error('there is an answer already');
             }
@@ -56,6 +65,11 @@ export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQ
                         state.quiz,
                         entry,
                         quizHistorySize);
+
+                gtag('event', 'quiz-finish', {
+                    'event_category': state.quiz,
+                    'value': 5,
+                });
             }
         } else if (action.type === 'NEXT') {
             state.currentAnswer = null;

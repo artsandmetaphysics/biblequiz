@@ -478,12 +478,25 @@ class Verses extends React.Component {
         const verseText = getVerseText(verse);
         return (
             <p className="body__verses">
-                <span className="text-muted">{prevVerses.join(' ')}</span>
-                <span id={'current-verse'}className="text-main">{' ' + verseText + ' '}</span>
-                <span className="text-muted">{postVerses.join(' ')}</span>
+                <span className="text-muted">{expandTabsAndNewLines(prevVerses.join(' '))}</span>
+                <span id={'current-verse'}className="text-main">{' '}{expandTabsAndNewLines(verseText)}{' '}</span>
+                <span className="text-muted">{expandTabsAndNewLines(postVerses.join(' '))}</span>
             </p>
         );
     }
+}
+
+function expandTabsAndNewLines(text) {
+  const sections = text.split('\n')
+  return sections.map(function(item, key) {
+      const lastSection = key !== sections.length - 1;
+      return (
+        <span key={key}>
+          {item.replace(/\t/g, '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0')}
+          {lastSection ? <br/> : null}
+        </span>
+      )
+  })
 }
 
 ReactDOM.render(
