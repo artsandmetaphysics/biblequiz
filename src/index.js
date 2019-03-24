@@ -149,14 +149,15 @@ function Footer ({children}) {
 }
 
 function HomeFooter () {
-    return (
-        <Footer>
-            <p className="home__footer">
-                <ContactUs>Contact Info</ContactUs>.
-                Verses taken from the <a href="https://en.wikipedia.org/wiki/World_English_Bible">WEB translation</a>.
-            </p>
-        </Footer>
-    );
+    return <Footer />
+    //return (
+        //<Footer>
+            //<p className="home__footer">
+                //<ContactUs>Contact Info</ContactUs>.
+                //Verses taken from the <a href="https://en.wikipedia.org/wiki/World_English_Bible">WEB translation</a>.
+            //</p>
+        //</Footer>
+    //);
 }
 
 function FooterLinks () {
