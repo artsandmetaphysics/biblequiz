@@ -1,3 +1,5 @@
+export let gtag = window.gtag || function() {};
+
 export const range = (start, stop) => {
     if (stop === undefined) {
         stop = start;

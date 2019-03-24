@@ -13,3 +13,10 @@ For WEB:
 ```
 python bibles/parse_en_web.py bibles/web dist/bible.js
 ```
+
+## Test
+
+```
+npm run test
+pytest
+```

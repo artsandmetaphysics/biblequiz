@@ -1,3 +1,5 @@
+import {gtag} from './util.js';
+
 // The current version of the javascript state;
 // if we change the structure of the state, we need to migrate any data left in
 // local storage that uses an older version.
@@ -18,7 +20,10 @@ export const MAX_QUIZ_HISTORY_SIZE = 100;
 export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQuestion, scoreQuiz) => {
     return (state, action) => {
         if (action.type === 'SELECT_QUIZ') {
-            state.currentAnswer = null;
+            if (state.quiz !== null && action.quiz === null) {
+                state.currentAnswer = null;
+                state.currentQuestion = null;
+            }
             state.quiz = action.quiz;
             if (state.currentQuestion === null && state.quiz !== null) {
                 state.currentQuestion = getQuestion(state.quiz, state.historicalQAs);

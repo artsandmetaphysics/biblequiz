@@ -1,10 +1,8 @@
 import {buildReducer, HISTORICAL_QA_MAX_SIZE, MAX_QUIZ_HISTORY_SIZE, loadState, saveState} from './state.js';
 import {isGameOver, scoreQuiz, getUiState, quizBooks, quizLabel, QUESTIONS_PER_QUIZ, newTestamentStatus, oldTestamentStatus, modeStatus, qaStatus, scoreQA, isGameDone} from './selectors.js';
 import {getRandomVerse, bookLabel, getChaptersPerBook, getVersesPerChapter, getPrevVerse, getNextVerse, getVerseText, verseToLabel} from './bible.js';
-import {range} from './util.js';
+import {range, gtag} from './util.js';
 import './index.scss';
-
-let gtag = window.gtag || function() {};
 
 class AppErrorContainer extends React.Component {
     constructor(props) {
