@@ -77,7 +77,7 @@ class App extends React.Component {
             const questionNum = quizQAs.length;
             const completePercent = questionNum/QUESTIONS_PER_QUIZ;
             header = <GameHeader quiz={quiz} mode={mode} score={score}
-                    completePercent={completePercent} />
+                    completePercent={completePercent} dispatch={this.dispatch} />
             answerPanel = <AnswerPanel show={uiState === 'review'} question={question} />;
             if (uiState === 'prompt') {
                 body = <PromptBody question={question} />
@@ -110,11 +110,12 @@ function Header ({children}) {
     return <div className="header">{children}</div>
 }
 
-function GameHeader ({quiz, mode, score, completePercent}) {
+function GameHeader ({quiz, mode, score, completePercent, dispatch}) {
     // TODO: make look fancier when in higher modes
+    const switchQuiz = () => dispatch({type: 'SELECT_QUIZ', quiz: null});
     return (
         <Header>
-            <h2 className="header__quiz-name">{quizLabel(quiz)}</h2>
+            <h2 className="header__quiz-name" onClick={switchQuiz}>{quizLabel(quiz)}</h2>
             <h2 className="header__score">{score}</h2>
             <ProgressBar completePercent={completePercent} />
         </Header>
@@ -492,7 +493,7 @@ function expandTabsAndNewLines(text) {
       const lastSection = key !== sections.length - 1;
       return (
         <span key={key}>
-          {item.replace(/\t/g, '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0')}
+          {item.replace(/\t/g, '\u00A0\u00A0\u00A0\u00A0')}
           {lastSection ? <br/> : null}
         </span>
       )
