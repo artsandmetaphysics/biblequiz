@@ -16,6 +16,9 @@ class AppErrorContainer extends React.Component {
     }
     componentDidCatch(error, info) {
         console.error(error, info);
+        gtag('event', 'error', {
+            'event_category': error.toString(),
+        });
     }
     render() {
         if (!this.state.error) {

@@ -18,10 +18,7 @@ export const MAX_QUIZ_HISTORY_SIZE = 100;
 export const buildReducer = (quizHistorySize, historicalQASize, isGameOver, getQuestion, scoreQuiz) => {
     return (state, action) => {
         if (action.type === 'SELECT_QUIZ') {
-            if (state.currentAnswer !== null) {
-                // the final NEXT call should clear this
-                throw new Error('start quiz when current answer not cleared')
-            }
+            state.currentAnswer = null;
             state.quiz = action.quiz;
             if (state.currentQuestion === null && state.quiz !== null) {
                 state.currentQuestion = getQuestion(state.quiz, state.historicalQAs);
