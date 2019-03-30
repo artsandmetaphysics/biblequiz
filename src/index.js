@@ -193,9 +193,10 @@ class PromptFooter extends React.Component {
         }
     }
     back() {
-        this.setState(({oldPartialAnswer}) => {
-            const newAnswer = [...oldPartialAnswer];
+        this.setState((oldState) => {
+            const newAnswer = oldState.partialAnswer.slice()
             newAnswer.pop();
+            console.log({partialAnswer: newAnswer})
             return {partialAnswer: newAnswer};
         });
     }
@@ -205,9 +206,9 @@ class PromptFooter extends React.Component {
         const numToChoice = (c) => ({value: c, label: String(c + 1)});
 
         let choices;
-        if (chapter) {
+        if (chapter !== undefined) {
             choices = range(getVersesPerChapter(book, chapter)).map(numToChoice);
-        } else if (book) {
+        } else if (book !== undefined) {
             choices = range(getChaptersPerBook(book)).map(numToChoice);
         } else {
             choices = quizBooks(quiz).map(b => ({value: b, label: bookLabel(b)}));
@@ -218,6 +219,7 @@ class PromptFooter extends React.Component {
         const {mode, quiz, question, dispatch} = this.props;
         const showBackBtn = this.state.partialAnswer.length > 0;
         const choices = this.getChoices();
+        const choose = this.choose
         return (
             <Footer>
                 <FooterText>
@@ -227,7 +229,7 @@ class PromptFooter extends React.Component {
                 </FooterText>
                 <BtnSet>
                     {choices.map((c) => {
-                    return <Btn key={c.value} onClick={() => this.choose(c.value)}>{c.label}</Btn>
+                    return <Btn key={c.value} onClick={() => choose(c.value)}>{c.label}</Btn>
                     })}
                     {showBackBtn ? <Btn state="secondary" onClick={this.back}>Back</Btn> : null}
                 </BtnSet>
@@ -305,7 +307,7 @@ function PromptBody ({question}) {
 }
 
 function ReviewBody ({question}) {
-    return <Body paddingTop><Verses verse={question} context={1000} showNumbers={true} /></Body>
+    return <Body paddingTop><Verses verse={question} context={10000} showNumbers={true} /></Body>
 }
 
 function ScoreBody ({quizHistory, latest}) {
