@@ -1,80 +1,72 @@
-import {newTestamentStatus, oldTestamentStatus, modeStatus, scoreQA} from './selectors.js'
+import {quizStatus, scoreQA} from './selectors.js'
 
 // note: for these tests the datetime associated with the scores are
 // conveniently omitted
-describe('oldTestamentStatus', () => {
-    test('blank', () => {
+describe('quizStatus', () => {
+    test('oldtestament blank', () => {
         const gameHistory = {
             basic: {},
             moses: {},
             jesus: {},
         };
-        expect(oldTestamentStatus(gameHistory, 'basic')).toEqual([0, 4]);
+        expect(quizStatus(gameHistory, 'basic', 'oldtestament')).toEqual([0, 4]);
+        expect(quizStatus(gameHistory, 'moses', 'oldtestament')).toEqual([0, 4 + 1 + 4]);
     });
-    test('one complete', () => {
+    test('oldtestament one complete', () => {
         const gameHistory = {
             basic: {pentateuch: [[90]]},
             moses: {},
             jesus: {},
         };
-        expect(oldTestamentStatus(gameHistory, 'basic')).toEqual([1, 4]);
-        expect(oldTestamentStatus(gameHistory, 'moses')).toEqual([0, 4]);
+        expect(quizStatus(gameHistory, 'basic', 'oldtestament')).toEqual([1, 4]);
+        expect(quizStatus(gameHistory, 'moses', 'oldtestament')).toEqual([1, 4 + 1 + 4]);
     });
-    test('one complete moses', () => {
+    test('oldtestament one complete jesus', () => {
         const gameHistory = {
-            basic: {},
-            moses: {pentateuch: [[9000]]},
+            basic: {
+                pentateuch: [[90]],
+                historical: [[90]],
+                poetryandwisdom: [[90]],
+                prophecy: [[90]],
+                oldtestament: [[90]],
+            },
+            moses: {
+                pentateuch: [[900]],
+                historical: [[900]],
+                poetryandwisdom: [[900]],
+                prophecy: [[900]],
+                oldtestament: [[900]],
+            },
             jesus: {},
         };
-        expect(oldTestamentStatus(gameHistory, 'basic')).toEqual([0, 4]);
-        expect(oldTestamentStatus(gameHistory, 'moses')).toEqual([1, 4]);
+        expect(quizStatus(gameHistory, 'basic', 'oldtestament')).toEqual([4, 4]);
+        expect(quizStatus(gameHistory, 'moses', 'oldtestament')).toEqual([9, 4 + 1 + 4]);
     });
-    test('one complete jesus', () => {
-        const gameHistory = {
-            basic: {},
-            moses: {},
-            jesus: {pentateuch: [[90000]]},
-        };
-        expect(oldTestamentStatus(gameHistory, 'basic')).toEqual([0, 4]);
-        expect(oldTestamentStatus(gameHistory, 'moses')).toEqual([0, 4]);
-        expect(oldTestamentStatus(gameHistory, 'jesus')).toEqual([1, 4]);
-    });
-    test('one complete unrelated', () => {
+    test('oldtestament one complete unrelated', () => {
         const gameHistory = {
             basic: {unrelated: [[90]]},
             moses: {},
             jesus: {},
         };
-        expect(oldTestamentStatus(gameHistory, 'basic')).toEqual([0, 4]);
-        expect(oldTestamentStatus(gameHistory, 'moses')).toEqual([0, 4]);
+        expect(quizStatus(gameHistory, 'basic', 'oldtestament')).toEqual([0, 4]);
     });
-});
-
-describe('modeState', () => {
-    test('blank', () => {
+    test('pentateuch blank', () => {
         const gameHistory = {
             basic: {},
             moses: {},
             jesus: {},
         };
-        expect(modeStatus(gameHistory, 'moses')).toEqual([0, 8]);
+        expect(quizStatus(gameHistory, 'basic', 'pentateuch')).toEqual([0, 0]);
+        expect(quizStatus(gameHistory, 'moses', 'pentateuch')).toEqual([0, 1]);
     });
-    test('complete', () => {
+    test('pentateuch blank', () => {
         const gameHistory = {
-            basic: {
-                pentateuch: [[100]],
-                historical: [[100]],
-                poetryandwisdom: [[100]],
-                prophecy: [[100]],
-                oldtestament: [[100]],
-                gosepels: [[100]],
-                epistlesetc: [[100]],
-                newtestament: [[100]],
-            },
+            basic: {pentateuch: [[100]]},
             moses: {},
             jesus: {},
         };
-        expect(modeStatus(gameHistory, 'moses')).toEqual([8, 8]);
+        expect(quizStatus(gameHistory, 'basic', 'pentateuch')).toEqual([0, 0]);
+        expect(quizStatus(gameHistory, 'moses', 'pentateuch')).toEqual([1, 1]);
     });
 });
 

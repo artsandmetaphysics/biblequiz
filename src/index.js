@@ -1,7 +1,7 @@
 import {buildReducer, HISTORICAL_QA_MAX_SIZE, MAX_QUIZ_HISTORY_SIZE, loadState, saveState} from './state.js';
-import {isGameOver, scoreQuiz, getUiState, quizBooks, quizLabel, QUESTIONS_PER_QUIZ, newTestamentStatus, oldTestamentStatus, modeStatus, qaStatus, scoreQA, isGameDone} from './selectors.js';
+import {isGameOver, scoreQuiz, getUiState, quizBooks, quizLabel, QUESTIONS_PER_QUIZ, quizStatus, qaStatus, scoreQA, isGameDone} from './selectors.js';
 import {getRandomVerse, bookLabel, getChaptersPerBook, getVersesPerChapter, getPrevVerse, getNextVerse, getVerseText, verseToLabel} from './bible.js';
-import {range, gtag} from './util.js';
+import {range, gtag, expandTabsAndNewLines} from './util.js';
 import './index.scss';
 
 class AppErrorContainer extends React.Component {
@@ -292,16 +292,20 @@ function ButtonSet ({children}) {
     return <div className="footer__button-set">{children}</div>
 }
 
-function Body ({children}) {
-    return <div className="body">{children}</div>
+function Body ({children, paddingTop}) {
+    if (paddingTop) {
+        return <div className="body body--padding-top">{children}</div>
+    } else {
+        return <div className="body">{children}</div>
+    }
 }
 
 function PromptBody ({question}) {
-    return <Body><Verses verse={question} context={1}/></Body>
+    return <Body><Verses verse={question} context={1} showNumbers={false} /></Body>
 }
 
 function ReviewBody ({question}) {
-    return <Body><Verses verse={question} context={1000} /></Body>
+    return <Body paddingTop><Verses verse={question} context={1000} showNumbers={true} /></Body>
 }
 
 function ScoreBody ({quizHistory, latest}) {
@@ -360,8 +364,8 @@ function ErrorBody () {
 }
 
 function HomeBody ({gameHistory, mode, dispatch}) {
-    const BoundQuizBtn = ({quiz, status = null}) => {
-        return <QuizBtn gameHistory={gameHistory} mode={mode} quiz={quiz} dispatch={dispatch} status={status} />
+    const BoundQuizBtn = ({quiz}) => {
+        return <QuizBtn gameHistory={gameHistory} mode={mode} quiz={quiz} dispatch={dispatch} />
     }
     return (
         <Body>
@@ -371,21 +375,22 @@ function HomeBody ({gameHistory, mode, dispatch}) {
                 <BoundQuizBtn quiz='historical' />
                 <BoundQuizBtn quiz='poetryandwisdom' />
                 <BoundQuizBtn quiz='prophecy' />
-                <BoundQuizBtn quiz='oldtestament' status={oldTestamentStatus(gameHistory, mode)}/>
+                <BoundQuizBtn quiz='oldtestament' />
             </div>
             <div className="body__quiz-set">
                 <BoundQuizBtn quiz='gospels' />
                 <BoundQuizBtn quiz='epistlesetc' />
-                <BoundQuizBtn quiz='newtestament' status={newTestamentStatus(gameHistory, mode)}/>
+                <BoundQuizBtn quiz='newtestament' />
             </div>
             <div className="body__quiz-set">
-                <ModeBtn mode={mode} dispatch={dispatch} status={modeStatus(gameHistory, 'moses')}/>
+                <ModeBtn gameHistory={gameHistory} mode={mode} dispatch={dispatch} />
             </div>
         </Body>
     );
 }
 
-function QuizBtn ({gameHistory, mode, quiz, dispatch, status}) {
+function QuizBtn ({gameHistory, mode, quiz, dispatch}) {
+    const status = quizStatus(gameHistory, mode, quiz)
     const locked = status && status[0] !== status[1];
     const startQuiz = () => dispatch({type: 'SELECT_QUIZ', quiz});
     const onClick = locked ? () => {} : startQuiz;
@@ -414,18 +419,24 @@ function Lock () {
     );
 }
 
-function ModeBtn ({nextMode, dispatch, status}) {
-    const locked = nextMode === undefined;
-    const onClick = locked ? () => {} : dispatch({type: 'SELECT_MODE', mode: nextMode});
-    const state = locked ? 'disabled' : 'primary';
-    // NOTE: duplicattion between here and QuizBtn
+function ModeBtn ({gameHistory, mode, dispatch}) {
+    // TODO: add jesus mode once you beat moses mode
+    let nextMode, label;
+    const mosesDone = isGameDone(gameHistory, 'moses', 'oldtestament') && isGameDone(gameHistory, 'moses', 'newtestament');
+    if (!mosesDone) {
+        nextMode = {basic: 'moses', moses: 'basic'}[mode]
+        label = {basic: 'Moses Mode', moses: 'Basic Mode'}[mode]
+    } else {
+        nextMode = {basic: 'moses', moses: 'jesus', jesus: 'basic'}[mode]
+        label = {basic: 'Moses Mode', moses: 'Jesus Mode', jesus: 'Basic Mode'}[mode]
+    }
+    const onClick = () => dispatch({type: 'SELECT_MODE', mode: nextMode});
     return (
-        <Btn onClick={onClick} state={state}>
-            <span className="vertical-center">
-                <span className="top-score">{locked ? <Lock /> : ''}</span>
-                <h2>Moses Mode</h2>
+        <Btn onClick={onClick} state='primary'>
+            <span className="vertical-centerr">
+                <span className="top-score"></span>
+                <h2>{label}</h2>
             </span>
-            {locked ? <span>{status[0] + '/' + status[1]}</span> : <span />}
         </Btn>
     );
 }
@@ -449,15 +460,15 @@ class Verses extends React.Component {
         this.scrollToVerse();
     }
     scrollToVerse() {
-        const current = document.getElementById('current-verse');
-        current.scrollIntoView({
-            behavior: 'auto',
-            block: 'center',
-            inline: 'center'
-        });
+        const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        const currentVerse = document.getElementById('current-verse');
+        const body = document.getElementsByClassName('body')[0];
+        const scrollTo = currentVerse.offsetTop - viewportHeight/2 + 30;
+        document.body.scrollTop = scrollTo
+        body.scrollTop = scrollTo;
     }
     render() {
-        const {verse, context} = this.props;
+        const {verse, context, showNumbers} = this.props;
         const prevVerses = [];
         const postVerses = [];
 
@@ -467,7 +478,7 @@ class Verses extends React.Component {
             if (currentVerse === null) {
                 break;
             }
-            prevVerses.unshift(getVerseText(currentVerse));
+            prevVerses.unshift(getVerseText(currentVerse, showNumbers));
         }
 
         currentVerse = verse;
@@ -476,29 +487,35 @@ class Verses extends React.Component {
             if (currentVerse === null) {
                 break;
             }
-            postVerses.push(getVerseText(currentVerse));
+            postVerses.push(getVerseText(currentVerse, showNumbers));
         }
-        const verseText = getVerseText(verse);
+        const verseText = getVerseText(verse, showNumbers);
         return (
             <p className="body__verses">
-                <span className="text-muted">{expandTabsAndNewLines(prevVerses.join(' '))}</span>
-                <span id={'current-verse'}className="text-main">{' '}{expandTabsAndNewLines(verseText)}{' '}</span>
-                <span className="text-muted">{expandTabsAndNewLines(postVerses.join(' '))}</span>
+                <span className="text-muted">{expandVerse(prevVerses.join(' '))}</span>
+                <span id={'current-verse'}className="text-main">{' '}{expandVerse(verseText)}{' '}</span>
+                <span className="text-muted">{expandVerse(postVerses.join(' '))}</span>
             </p>
         );
     }
 }
 
-function expandTabsAndNewLines(text) {
+function expandVerse(text) {
   const sections = text.split('\n')
   return sections.map(function(item, key) {
-      const lastSection = key !== sections.length - 1;
-      return (
-        <span key={key}>
-          {item.replace(/\t/g, '\u00A0\u00A0\u00A0\u00A0')}
-          {lastSection ? <br/> : null}
-        </span>
-      )
+      if (item.startsWith('CHAPTER ')) {
+          return <span key={key} className='chapter'>{item}</span>
+      } else if (item === '') {
+          return null
+      } else {
+          const lastSection = key !== sections.length - 1;
+          return (
+            <span key={key}>
+              {expandTabsAndNewLines(item)}
+              {lastSection ? <br/> : null}
+            </span>
+          )
+      }
   })
 }
 

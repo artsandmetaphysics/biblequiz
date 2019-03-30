@@ -7,11 +7,18 @@ export function getRandomVerse(books, historicalQAs) {
     const verseIndex = getRandomInt(numVerses)
     const verse = [bookIndex, chapterIndex, verseIndex];
 
-    // Luke 17.36 is not included in modern bibles
+    // Luke 17.36, Acts 8.37, 15.34, and 24.7 are not included in WEB bibles
     if (bookIndex === 41 && chapterIndex === (17 - 1) && verseIndex === (36 - 1)) {
         return getRandomVerse(books, historicalQAs)
+    } else if (bookIndex === 43 && chapterIndex === (8 - 1) && verseIndex === (37 - 1)) {
+        return getRandomVerse(books, historicalQAs)
+    } else if (bookIndex === 43 && chapterIndex === (15 - 1) && verseIndex === (34 - 1)) {
+        return getRandomVerse(books, historicalQAs)
+    } else if (bookIndex === 43 && chapterIndex === (24 - 1) && verseIndex === (7 - 1)) {
+        return getRandomVerse(books, historicalQAs)
+    } else {
+        return verse;
     }
-    return verse;
 }
 
 export function getChaptersPerBook(book) {
@@ -54,13 +61,19 @@ function getRandomIntWeighted(lengths) {
     return index;
 }
 
-export function getVerseText(verse) {
+export function getVerseText(verse, showNumbers) {
     const [bookIndex, chapterIndex, verseIndex] = verse;
     const verseText = BIBLE[bookIndex][chapterIndex][verseIndex];
-    if (verseText !== undefined) {
-        return verseText;
-    } else {
+    if (verseText === undefined) {
         throw new Error('invalid verse ' + verse);
+    } else if (showNumbers && verseIndex === 0) {
+        if (verseText[0] === '\n') {
+            return `\n\nCHAPTER ${chapterIndex + 1}\n` + verseText;
+        } else {
+            return `\n\nCHAPTER ${chapterIndex + 1}\n\n` + verseText;
+        }
+    } else {
+        return verseText;
     }
 }
 

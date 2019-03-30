@@ -95,46 +95,128 @@ export const quizBooks = (quiz) => {
     return QUIZZES[quiz].books; 
 }
 
+const QUIZ_DEPENDENCIES = {
+    basic: {
+        pentateuch: [],
+        historical: [],
+        poetryandwisdom: [],
+        prophecy: [],
+        oldtestament: [
+            ['basic', 'pentateuch'],
+            ['basic', 'historical'],
+            ['basic', 'poetryandwisdom'],
+            ['basic', 'prophecy'],
+        ],
+        gospels: [],
+        epistlesetc: [],
+        newtestament: [
+            ['basic', 'gospels'],
+            ['basic', 'epistlesetc'],
+        ],
+    },
+    moses: {
+        pentateuch: [
+            ['basic', 'pentateuch']
+        ],
+        historical: [
+            ['basic', 'historical']
+        ],
+        poetryandwisdom: [
+            ['basic', 'poetryandwisdom']
+        ],
+        prophecy: [
+            ['basic', 'prophecy']
+        ],
+        oldtestament: [
+            ['basic', 'oldtestament'],
+            ['moses', 'pentateuch'],
+            ['moses', 'historical'],
+            ['moses', 'poetryandwisdom'],
+            ['moses', 'prophecy'],
+        ],
+        gospels: [
+            ['basic', 'gospels']
+        ],
+        epistlesetc: [
+            ['basic', 'epistlesetc']
+        ],
+        newtestament: [
+            ['basic', 'newtestament'],
+            ['moses', 'gospels'],
+            ['moses', 'epistlesetc'],
+        ],
+    },
+    jesus: {
+        pentateuch: [
+            ['moses', 'pentateuch']
+        ],
+        historical: [
+            ['moses', 'historical']
+        ],
+        poetryandwisdom: [
+            ['moses', 'poetryandwisdom']
+        ],
+        prophecy: [
+            ['moses', 'prophecy']
+        ],
+        oldtestament: [
+            ['moses', 'oldtestament'],
+            ['jesus', 'pentateuch'],
+            ['jesus', 'historical'],
+            ['jesus', 'poetryandwisdom'],
+            ['jesus', 'prophecy'],
+        ],
+        gospels: [
+            ['moses', 'gospels']
+        ],
+        epistlesetc: [
+            ['moses', 'epistlesetc']
+        ],
+        newtestament: [
+            ['moses', 'newtestament'],
+            ['jesus', 'gospels'],
+            ['jesus', 'epistlesetc'],
+        ],
+    }
+}
+
+
 const MODE_CUTOFFS = {basic: 90, moses: 900, jesus: 9000};
 
-export const oldTestamentStatus = (gameHistory, mode) => {
-    const cutoff = MODE_CUTOFFS[mode];
-    const modeHistory = gameHistory[mode];
-    return status(modeHistory, cutoff, [
-        'pentateuch',
-        'historical',
-        'poetryandwisdom',
-        'prophecy',
-    ]);
+export const quizStatus = (gameHistory, mode, quiz) => {
+    const dependencies = getDependencies(mode, quiz)
+    return status(gameHistory, dependencies)
 }
 
-export const newTestamentStatus = (gameHistory, mode) => {
-    const cutoff = MODE_CUTOFFS[mode];
-    const modeHistory = gameHistory[mode];
-    return status(modeHistory, cutoff, [
-        'gospels',
-        'epistlesetc',
-    ]);
+export const getDependencies = (mode, quiz) => {
+    // TODO: rewrite using a Set (was on airplaine w no SO)
+    const dependencies = []
+    const topDependencies = QUIZ_DEPENDENCIES[mode][quiz]
+    topDependencies.forEach(([mode, quiz]) => {
+        const subDependencies = QUIZ_DEPENDENCIES[mode][quiz]
+        dependencies.push([mode, quiz])
+        if (subDependencies.length > 0) {
+            const subResults = getDependencies(mode, quiz)
+            subResults.forEach(r => dependencies.push(r))
+        }
+    })
+    const deduplicated = []
+    dependencies.forEach(d => {
+        let included = false
+        deduplicated.forEach(dd => {
+            if (dd[0] === d[0] && dd[1] === d[1]) {
+                included = true
+            }
+        })
+        if (!included) {
+            deduplicated.push(d)
+        }
+    })
+    return deduplicated
 }
 
-export const modeStatus = (gameHistory, mode) => {
-    const prevMode = {moses: 'basic', jesus: 'moses'}[mode];
-    const modeHistory = gameHistory[prevMode];
-    const cutoff = MODE_CUTOFFS[prevMode];
-    return status(modeHistory, cutoff, [
-        'pentateuch',
-        'historical',
-        'poetryandwisdom',
-        'prophecy',
-        'oldtestament',
-        'gosepels',
-        'epistlesetc',
-        'newtestament',
-    ]);
-}
-
-const status = (modeHistory, cutoff, quizzes) => {
-    const results = quizzes.map(q => gameDone(modeHistory[q], cutoff));
+const status = (gameHistory, dependencies) => {
+    const results = dependencies.map(([mode, quiz]) => isGameDone(gameHistory, mode, quiz))
     const completed = results.reduce((sum, r) => r ? sum + 1 : sum, 0);
     const required = results.length;
     return [completed, required]
@@ -143,9 +225,5 @@ const status = (modeHistory, cutoff, quizzes) => {
 export const isGameDone = (gameHistory, mode, quiz) => {
     const quizHistory = gameHistory[mode][quiz];
     const cutoff = MODE_CUTOFFS[mode];
-    return gameDone(quizHistory, cutoff);
-}
-
-const gameDone = (quizHistory, cutoff) => {
     return quizHistory !== undefined && quizHistory[0][0] >= cutoff;
 }
