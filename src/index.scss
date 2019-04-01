@@ -1,12 +1,12 @@
 $primary: #341F89;
 $mutedPrimary: #7F71B6;
 $mutedBackground: #F8F6F2;
-$mutedText: #B0A49C;
+$mutedText: #7d726b;
 $disabled: #79738D;
 $success: #28891F;
 $error: #EB5757;
 $errorDarker: #881725;
-$mainText: #523227;
+$mainText: #190f09;
 
 html {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -40,11 +40,6 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-
-    // add padding so you can scroll to the top when the answer panel is open
-    &--padding-top {
-        margin-top: 3.5rem;
-    }
 }
 
 h1 {
@@ -143,7 +138,26 @@ p {
     }
 
     &__verses {
+        margin-top: 1.5rem;
         font-size: 1.1rem;
+        font-family: Palatino,'Times New Roman',serif;
+        line-height: 1.6rem;
+    }
+
+    .chapter {
+        display: block;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: $mainText;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .verse-number {
+        font-size: 0.8rem;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        vertical-align: super;
     }
 
     &__quiz-set {
@@ -153,14 +167,9 @@ p {
         font-size: 1rem;
 
         // special button styles for just the home page
-        & > .btn {
+        & > .btn-quiz {
             padding-right: 2rem;
             justify-content: space-between;
-
-            h2 {
-                margin: 0.3rem 0;
-                display: inline-block;
-            }
 
             .top-score {
                 width: 4rem;
@@ -168,6 +177,26 @@ p {
                 display: inline-block;
             }
         }
+
+        & > .btn-mode {
+            justify-content: center;
+            h2 {
+                font-weight: normal;
+            }
+        }
+
+        & > .btn {
+            h2 {
+                margin: 0.3rem 0;
+                display: inline-block;
+            }
+
+        }
+    }
+
+    // add padding so you can scroll to the top when the answer panel is open
+    &--padding-top {
+        margin-top: 2.5rem;
     }
 }
 
@@ -196,6 +225,7 @@ p {
         padding: 0 0.1rem 0.1rem 0.1rem;
         overflow-y: auto;
         max-height: 40vh;
+        padding-bottom: env(safe-area-inset-bottom);
 
         & > .btn {
             min-width: 3rem;
@@ -235,6 +265,10 @@ p {
     &--error { background-color: $error; }
 }
 
+.mode-btn {
+}
+
+
 table {
     border-collapse: collapse;
 }
@@ -263,9 +297,10 @@ th {
 }
 
 .text-muted {
-    color: $mutedText;
+    color: $mainText;
     .text-highlight {
         color: $mainText;
+        font-weight: bold;
     }
 }
 
@@ -275,14 +310,5 @@ th {
 
 .text-main {
     color: $mainText;
-}
-
-.chapter {
-    display: block;
-    text-align: center;
-    font-size: 1.2rem;
     font-weight: bold;
-    color: $mainText;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
 }

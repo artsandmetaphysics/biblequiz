@@ -402,7 +402,7 @@ function QuizBtn ({gameHistory, mode, quiz, dispatch}) {
     const topScore = quizHistory !== undefined ? quizHistory[0][0] : null;
     // NOTE: duplicattion between here and ModeBtn
     return (
-        <Btn onClick={onClick} state={state}>
+        <Btn onClick={onClick} state={state} className='btn-quiz'>
             <span className="vertical-center">
                 <span className="top-score">{locked ? <Lock /> : topScore}</span>
                 <h2>{quizLabel(quiz)}</h2>
@@ -434,18 +434,17 @@ function ModeBtn ({gameHistory, mode, dispatch}) {
     }
     const onClick = () => dispatch({type: 'SELECT_MODE', mode: nextMode});
     return (
-        <Btn onClick={onClick} state='primary'>
-            <span className="vertical-centerr">
-                <span className="top-score"></span>
-                <h2>{label}</h2>
+        <Btn onClick={onClick} state='primary' className='btn-mode'>
+            <span className="vertical-center mode-btn">
+                <h2>Enable {label}</h2>
             </span>
         </Btn>
     );
 }
 
-function Btn ({children, onClick = () => {}, state = 'primary'}) {
+function Btn ({children, onClick = () => {}, state = 'primary', className = ''}) {
     return (
-        <div className={"btn btn--" + state} onClick={onClick}>
+        <div className={"btn btn--" + state + ' ' + className} onClick={onClick}>
             {children}
         </div>
     );

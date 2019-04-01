@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Hard Bible Quiz",
+    "short_name": "Bible Quiz",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -13,7 +13,8 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
+    "start_url": "/",
+    "theme_color": "#341F89",
     "background_color": "#ffffff",
     "display": "standalone"
 }
