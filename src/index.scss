@@ -126,7 +126,8 @@ p {
 }
 
 .body {
-    overflow-y: auto;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
     flex-direction: column;
     display: flex;
     align-items: center;

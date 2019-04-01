@@ -93,7 +93,8 @@ p {
     top: 2.5rem; }
 
 .body {
-  overflow-y: auto;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
   flex-direction: column;
   display: flex;
   align-items: center;
