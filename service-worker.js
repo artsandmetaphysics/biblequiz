@@ -2,7 +2,7 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/4.1.1/workbox
 
 if (workbox) {
   workbox.routing.registerRoute(
-    new RegExp('.*bible\.js'),
+    '/dist/bible.js',
     new workbox.strategies.CacheFirst()
   );
   workbox.routing.registerRoute(
