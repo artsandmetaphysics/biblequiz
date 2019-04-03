@@ -30,6 +30,12 @@ html {
     }
 }
 
+@media (max-width: 370px) {
+    html {
+        font-size: 14px;
+    }
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -230,9 +236,9 @@ p {
 
         & > .btn {
             min-width: 3rem;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-            height: 3rem;
+            padding-left: 0.4rem;
+            padding-right: 0.4rem;
+            height: 2.8rem;
             text-align: center;
             justify-content: center;
             transition: color 0.2s ease-out;
