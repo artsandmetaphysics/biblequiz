@@ -511,10 +511,10 @@ function expandVerse(text) {
       } else {
           const lastSection = key !== sections.length - 1;
           return (
-            <span key={key}>
+            <React.Fragment key={key}>
               {expandTabsAndNewLines(item)}
               {lastSection ? <br/> : null}
-            </span>
+            </React.Fragment>
           )
       }
   })

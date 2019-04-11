@@ -63,17 +63,49 @@ function getRandomIntWeighted(lengths) {
 
 export function getVerseText(verse, showNumbers) {
     const [bookIndex, chapterIndex, verseIndex] = verse;
-    const verseText = BIBLE[bookIndex][chapterIndex][verseIndex];
+    let verseText = BIBLE[bookIndex][chapterIndex][verseIndex];
+    if (showNumbers) {
+        verseText = insertVerseNum(verseText, verseIndex + 1)
+    }
     if (verseText === undefined) {
         throw new Error('invalid verse ' + verse);
     } else if (showNumbers && verseIndex === 0) {
+        const chapterNum = chapterIndex + 1
         if (verseText[0] === '\n') {
-            return `\n\nCHAPTER ${chapterIndex + 1}\n` + verseText;
+            return `\n\nCHAPTER ${chapterNum}\n${verseText}`
         } else {
-            return `\n\nCHAPTER ${chapterIndex + 1}\n\n` + verseText;
+            return `\n\nCHAPTER ${chapterNum}\n\n${verseText}`
         }
     } else {
-        return verseText;
+        return verseText
+    }
+}
+
+export function superscript (stringWithNumerals) {
+  return stringWithNumerals.replace(/[0-9]/gi, c => {
+    return {
+      '1': '¹',
+      '2': '²',
+      '3': '³',
+      '4': '⁴',
+      '5': '⁵',
+      '6': '⁶',
+      '7': '⁷',
+      '8': '⁸',
+      '9': '⁹',
+      '0': '⁰',
+    }[c];
+  });
+};
+
+export function insertVerseNum(verseText, num) {
+    const numSuperscript = superscript(String(num))
+    if (verseText === '') {
+        return ''
+    } else if (verseText[0] === '\t') {
+        return `\t${numSuperscript}\u00A0${verseText.substring(1)}`
+    } else {
+        return `${numSuperscript}\u00A0${verseText}`
     }
 }
 
